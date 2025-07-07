@@ -1,2 +1,2 @@
 # TypeScript
-In this repository, I am sharing my journey of learning TypeScript
+In this Repo, I am sharing my journey of learning TypeScript
