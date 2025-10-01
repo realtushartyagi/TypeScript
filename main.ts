@@ -132,3 +132,52 @@ class TypedEmitter<Events extends EventMap> {
   }
 }
 
+/* Example event map */
+type MyEvents = {
+  increment: [by?: number];
+  userSet: [User];
+};
+
+/* =======================================================
+   Type-safe API client with inferred response type
+   ======================================================= */
+
+// Minimal fetch wrapper that infers JSON type via generics
+export async function apiGet<T>(url: string, timeoutMs = 5_000): Promise<T> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timer);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json() as T;
+    return data;
+  } catch (e) {
+    clearTimeout(timer);
+    throw e;
+  }
+}
+
+/* Helper to extract Promise type: UnwrapPromise<T> above */
+
+/* =======================================================
+   Generic Repository Pattern (type-safe)
+   ======================================================= */
+
+type Identifiable<Id = string> = { id: Id };
+
+interface Repository<T extends Identifiable<Id>, Id = string> {
+  get(id: Id): Promise<T | null>;
+  list(): Promise<T[]>;
+  save(item: T): Promise<T>;
+  remove(id: Id): Promise<void>;
+}
+
+// In-memory implementation
+class InMemoryRepo<T extends Identifiable<Id>, Id = string> implements Repository<T, Id> {
+  private map = new Map<Id, T>();
+  async get(id: Id) { return this.map.get(id) ?? null; }
+  async list() { return Array.from(this.map.values()); }
+  async save(item: T) { this.map.set(item.id, item); return item; }
+  async remove(id: Id) { this.map.delete(id); }
+}
